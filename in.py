@@ -40,6 +40,7 @@ class Atm:
             self.list.append('Numero de cuenta: {}'.format(i[2]))
             self.list.append('Tipo cuenta:= {}'.format(i[3]))
             self.ac = i[2]
+            self.amo = i[4]
             self.list.append('Balance: COP${}'.format(i[4]))
             self.list.append('Estado: {}'.format(i[5]))
 
@@ -139,15 +140,28 @@ class Atm:
         if(self.amount.get()=='' or self.amount2.get()==''):
             d = 'Ingrese los campos correctamente'
             messagebox._show('Error transaccional',d)
+        elif int(self.amount) < int(self.amount.get()):
+            d = 'Monto supera el balance de la cuenta'
+            messagebox._show('Error transaccional',d)            
         else:
-            self.limpiar = Label(self.frame, text='', font=('Courier',20,'bold'))
-            self.limpiar.place(x=140, y=180, width=380, height=180)
-            self.label = Label(self.frame,text='Transaccion exitosa!',font=('Courier',10,'bold'))
-            self.label.place(x=180, y=180, width=300, height=100)
-            self.conn.execute('Update cuenta set balance = balance-? where id_cuenta=?',(self.amount.get(), self.ac))
-            self.conn.execute('Update cuenta set balance = balance+? where id_cuenta=?',(self.amount.get(), self.amount2.get())) #¿Y si la cuenta no existe?
-            self.conn.commit()
-            self.entries()
+            aux = False
+            details = self.conn.execute('Select nom_dueño, pass, id_cuenta, tipo, balance, estado from cuenta where id_cuenta= ?',(self.amount2.get(),))
+            for i in self.details:
+                aux = i[2]
+                      
+            if not aux:
+                m = " Numero de cuenta incorrecto "
+                messagebox._show("Informacion", m)
+            else:
+                self.limpiar = Label(self.frame, text='', font=('Courier',20,'bold'))
+                self.limpiar.place(x=140, y=180, width=380, height=180)
+                self.label = Label(self.frame,text='Transaccion exitosa!',font=('Courier',10,'bold'))
+                self.label.place(x=180, y=180, width=300, height=100)
+                self.conn.execute('Update cuenta set balance = balance-? where id_cuenta=?',(self.amount.get(), self.ac))
+                self.conn.execute('Update cuenta set balance = balance+? where id_cuenta=?',(self.amount.get(), self.amount2.get())) #¿Y si la cuenta no existe?
+                self.conn.commit()
+                self.entries()
+                self.fetch()
 
     def deposit(self):
         self.limpiar = Label(self.frame, text='', font=('Courier',20,'bold'))
@@ -198,6 +212,9 @@ class Atm:
         if (self.amount.get() == ''):
             d = 'Enter amount'
             messagebox._show('Transaction Error', d)
+        elif int(self.amount) < int(self.amount.get()):
+            d = 'Monto supera el balance de la cuenta'
+            messagebox._show('Error transaccional',d) 
         else:
             self.limpiar = Label(self.frame, text='', font=('Courier',20,'bold'))
             self.limpiar.place(x=140, y=180, width=380, height=180)
@@ -207,6 +224,7 @@ class Atm:
             self.conn.commit()
             self.last_with()
             self.entries()
+            self.fetch()
 
 
     def last_with(self):
