@@ -14,7 +14,8 @@ class Atm:
         self.top = Label(self.main,text='Banco el progreso',bg='#1f1c2c',fg='white',font=('Courier',30,'bold'))
         self.top.pack(fill=X)
         self.frame = Frame(self.main,bg='#2193b0',width=600,height=500)
-
+        
+        
         self.account = Label(self.frame,text='Numero de cuenta',bg="#728B8E",fg="white",font=Courier)
         self.last = Button(self.frame,text='Ultima transaccion',bg='#1f1c2c',fg='white',font=('Courier',8,'bold'),command=self.history)
         self.accountEntry = Entry(self.frame,bg='#FFFFFF',highlightcolor="#50A8B0", highlightthickness=2, highlightbackground="white")
@@ -22,7 +23,9 @@ class Atm:
         self.pinEntry = Entry(self.frame,show='*',bg='#FFFFFF',highlightcolor="#50A8B0", highlightthickness=2, highlightbackground="white")
         self.button = Button(self.frame,text='Ingresar',bg='#1f1c2c',fg='white',font=('Courier',20,'bold'),command=self.validate)
         self.quit = Button(self.frame,text='Salir',bg='#1f1c2c',fg='white',font=('Courier',20,'bold'),command=self.main.destroy)
-
+        self.pinAtm = Entry(self.frame,show='*',bg='#FFFFFF',highlightcolor="#50A8B0", highlightthickness=2, highlightbackground="white")
+        
+        self.pinAtm.place(x=50,y=370,width=140,height=25)
         self.last.place(x=50,y=400,width=140,height=30)
         self.account.place(x=45,y=100,width=220,height=20)
         self.accountEntry.place(x=325,y=97,width=200,height=25)
@@ -140,15 +143,14 @@ class Atm:
         if(self.amount.get()=='' or self.amount2.get()==''):
             d = 'Ingrese los campos correctamente'
             messagebox._show('Error transaccional',d)
-        elif int(self.amount) < int(self.amount.get()):
+        elif int(self.amo) < int(self.amount.get()):
             d = 'Monto supera el balance de la cuenta'
             messagebox._show('Error transaccional',d)            
         else:
             aux = False
             details = self.conn.execute('Select nom_dueño, pass, id_cuenta, tipo, balance, estado from cuenta where id_cuenta= ?',(self.amount2.get(),))
-            for i in self.details:
+            for i in details:
                 aux = i[2]
-                      
             if not aux:
                 m = " Numero de cuenta incorrecto "
                 messagebox._show("Informacion", m)
@@ -158,7 +160,8 @@ class Atm:
                 self.label = Label(self.frame,text='Transaccion exitosa!',font=('Courier',10,'bold'))
                 self.label.place(x=180, y=180, width=300, height=100)
                 self.conn.execute('Update cuenta set balance = balance-? where id_cuenta=?',(self.amount.get(), self.ac))
-                self.conn.execute('Update cuenta set balance = balance+? where id_cuenta=?',(self.amount.get(), self.amount2.get())) #¿Y si la cuenta no existe?
+                self.conn.execute('Update cuenta set balance = balance+? where id_cuenta=?',(self.amount.get(), self.amount2.get())) 
+                self.conn.execute('Insert into transaccion (descripcion , estado , fecha , id_Cajero , id_Cuenta, monto, id_CuentaDestino) values ("Transferencia","aprobado","02/02/2021",1000, ? , ? , ? )',( self.ac , self.amount.get() , self.amount2.get()))
                 self.conn.commit()
                 self.entries()
                 self.fetch()
@@ -186,9 +189,11 @@ class Atm:
             self.label = Label(self.frame,text='Transaccion exitosa!',font=('Courier',10,'bold'))
             self.label.place(x=180, y=180, width=300, height=100)
             self.conn.execute('Update cuenta set balance = balance+? where id_cuenta=?',(self.amount.get(),self.ac))
+            self.conn.execute('Insert into transaccion (descripcion , estado , fecha , id_Cajero , id_Cuenta, monto) values ("Depositar","aprobado","02/02/2021",1000, ? , ?)',( self.ac , self.amount.get() ))
             self.conn.commit()
             self.write_deposit()
             self.entries()
+            self.fetch()
 
     def write_deposit(self):
         self.last_deposit = 'Cantidad:{} Cuenta:{}'.format(self.amount.get(), self.list[1])
@@ -212,7 +217,7 @@ class Atm:
         if (self.amount.get() == ''):
             d = 'Enter amount'
             messagebox._show('Transaction Error', d)
-        elif int(self.amount) < int(self.amount.get()):
+        elif (self.amo < int(self.amount.get())):
             d = 'Monto supera el balance de la cuenta'
             messagebox._show('Error transaccional',d) 
         else:
@@ -221,6 +226,7 @@ class Atm:
             self.label = Label(self.frame, text='Transaccion exitosa', font=('Courier', 10, 'bold'))
             self.label.place(x=180, y=180, width=300, height=100)
             self.conn.execute('Update cuenta set balance = balance-? where id_cuenta=?', (self.amount.get(), self.ac))
+            self.conn.execute('Insert into transaccion (descripcion , estado , fecha , id_Cajero , id_Cuenta, monto) values ("Retiro","aprobado","02/02/2021",1000, ? , ?)',( self.ac , self.amount.get() ))
             self.conn.commit()
             self.last_with()
             self.entries()
@@ -235,7 +241,7 @@ class Atm:
 
     def change(self):
         self.limpiar = Label(self.frame, text='', font=('Courier',20,'bold'))
-        self.limpiar.place(x=140, y=180, width=380, height=180)
+        self.limpiar.place(x=140, y=180, width=380, height=250)
  
         self.entries()
         self.label = Label(self.frame,text='Cambiar PIN',font=('Courier', 10, 'bold'))
@@ -265,15 +271,14 @@ class Atm:
             self.fetch()
             self.details = self.conn.execute('Select nom_dueño, pass, id_cuenta, tipo, balance, estado from cuenta where id_cuenta = ?',(self.ac,))
             for i in self.details:
-                p = i[1]
-            if self.old.get() == p :
+                p = str(i[1])
+            if self.old.get() == p:
                 if self.new.get() == self.confirm.get():
                     self.limpiar = Label(self.frame, text='', font=('Courier',20,'bold'))
-                    self.limpiar.place(x=140, y=180, width=380, height=180)
-                    self.label = Label(self.frame,text='Pin actualizado',font=('Courier', 10, 'bold'))
-                    self.label.place(x=180, y=180, width=300, height=100)
+                    self.limpiar.place(x=140, y=180, width=380, height=250)
                     self.conn.execute('Update cuenta set pass = ? where id_cuenta=?', (self.new.get(), self.ac))
                     self.conn.commit()
+                    messagebox._show("Pin actualizado","Contraseña actualizada")
                     self.remove_change_pin()
                     messagebox._show('Reinicio','Vuelva a ingresar')
                     main.destroy()
@@ -300,15 +305,22 @@ class Atm:
             self.confirm.insert(0,'')
 
     def history(self):
-        self.entries()
-        self.remove_change_pin()
-        f = open('ultima.txt','r')
-        self.hist = f.readlines()
-        f.close()
-        m = self.hist
-        messagebox._show("Ultima transaccion", m)
-        #self.label = Label(self.frame, text=self.hist, font=('Courier', 7, 'bold'))
-        #self.label.place(x=180, y=180, width=300, height=100)
+        flag = False
+        details = self.conn.execute('Select Clave,Estado,Saldo from cajero where Clave = 1000')#, (self.pinAtm.get(),))
+        for i in details:
+            flag = i[0]
+            print(flag)
+    
+        if not flag:
+            messagebox._show("ALERTA","Clave del cajero incorrecta ")
+        else:    
+            self.entries()
+            self.remove_change_pin()
+            f = open('ultima.txt','r')
+            self.hist = f.readlines()
+            f.close()
+            m = self.hist
+            messagebox._show("Ultima transaccion", m)
 
     def entries(self):
         try:
