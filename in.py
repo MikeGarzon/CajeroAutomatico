@@ -76,7 +76,7 @@ class Atm:
                     self.conn.execute('Update cuenta set estado = "bloqueada" where id_cuenta=?',(self.accountEntry.get()))
                     self.conn.commit()
 
-            if not ac:
+        if not ac:
                 m = " Numero de cuenta incorrecto "
                 messagebox._show("Informacion", m)
                 
@@ -305,23 +305,22 @@ class Atm:
             self.confirm.insert(0,'')
 
     def history(self):
-        flag = False
-        details = self.conn.execute('Select Clave,Estado,Saldo from cajero where Clave = 1000')#, (self.pinAtm.get(),))
-        for i in details:
-            flag = i[0]
-            print(flag)
-    
-        if not flag:
-            messagebox._show("ALERTA","Clave del cajero incorrecta ")
-        else:    
-            self.entries()
-            self.remove_change_pin()
-            f = open('ultima.txt','r')
-            self.hist = f.readlines()
-            f.close()
-            m = self.hist
-            messagebox._show("Ultima transaccion", m)
-
+        ac = False
+        self.details = self.conn.execute('Select Clave, Estado, FechaMantenimiento, Saldo from cajero where Clave = ?',(self.pinAtm.get(),))
+        for i in self.details:
+            ac = str(i[0])
+            if ac == self.pinAtm.get():
+                self.entries()
+                self.remove_change_pin()
+                f = open('ultima.txt','r')
+                self.hist = f.readlines()
+                f.close()
+                m = self.hist
+                messagebox._show("Ultima transaccion", m)
+        if (ac == False):
+            m = " Numero de cajero incorrecto "
+            messagebox._show("Informacion", m)
+            
     def entries(self):
         try:
             self.amount.place_forget()
